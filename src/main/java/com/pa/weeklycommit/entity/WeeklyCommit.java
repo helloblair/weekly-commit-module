@@ -1,7 +1,7 @@
 package com.pa.weeklycommit.entity;
 
-import com.pa.weeklycommit.entity.enums.ChessCategory;
-import com.pa.weeklycommit.entity.enums.CompletionStatus;
+import com.pa.weeklycommit.model.ChessCategory;
+import com.pa.weeklycommit.model.CompletionStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

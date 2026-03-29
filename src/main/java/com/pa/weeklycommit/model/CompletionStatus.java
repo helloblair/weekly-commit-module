@@ -1,4 +1,4 @@
-package com.pa.weeklycommit.entity.enums;
+package com.pa.weeklycommit.model;
 
 public enum CompletionStatus {
     COMPLETED,

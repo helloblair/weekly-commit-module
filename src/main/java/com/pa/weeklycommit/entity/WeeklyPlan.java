@@ -1,6 +1,6 @@
 package com.pa.weeklycommit.entity;
 
-import com.pa.weeklycommit.entity.enums.WeeklyPlanStatus;
+import com.pa.weeklycommit.model.PlanStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,7 +41,7 @@ public class WeeklyPlan {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private WeeklyPlanStatus status = WeeklyPlanStatus.DRAFT;
+    private PlanStatus status = PlanStatus.DRAFT;
 
     @Column(name = "locked_at")
     private OffsetDateTime lockedAt;
@@ -90,11 +90,11 @@ public class WeeklyPlan {
         this.weekOf = weekOf;
     }
 
-    public WeeklyPlanStatus getStatus() {
+    public PlanStatus getStatus() {
         return status;
     }
 
-    public void setStatus(WeeklyPlanStatus status) {
+    public void setStatus(PlanStatus status) {
         this.status = status;
     }
 

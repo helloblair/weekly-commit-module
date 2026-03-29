@@ -1,7 +1,11 @@
 package com.pa.weeklycommit.entity;
 
+import com.pa.weeklycommit.model.ChessCategory;
+import com.pa.weeklycommit.model.SnapshotType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,8 +34,9 @@ public class CommitSnapshot {
     @JoinColumn(name = "commit_id", nullable = false)
     private WeeklyCommit commit;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "snapshot_type", nullable = false, length = 20)
-    private String snapshotType = "LOCKED";
+    private SnapshotType snapshotType = SnapshotType.LOCKED;
 
     @Column(name = "title", nullable = false)
     private String title;
@@ -39,8 +44,9 @@ public class CommitSnapshot {
     @Column(name = "description")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "chess_category", length = 20)
-    private String chessCategory;
+    private ChessCategory chessCategory;
 
     @Column(name = "priority_rank")
     private Integer priorityRank;
@@ -72,11 +78,11 @@ public class CommitSnapshot {
         this.commit = commit;
     }
 
-    public String getSnapshotType() {
+    public SnapshotType getSnapshotType() {
         return snapshotType;
     }
 
-    public void setSnapshotType(String snapshotType) {
+    public void setSnapshotType(SnapshotType snapshotType) {
         this.snapshotType = snapshotType;
     }
 
@@ -96,11 +102,11 @@ public class CommitSnapshot {
         this.description = description;
     }
 
-    public String getChessCategory() {
+    public ChessCategory getChessCategory() {
         return chessCategory;
     }
 
-    public void setChessCategory(String chessCategory) {
+    public void setChessCategory(ChessCategory chessCategory) {
         this.chessCategory = chessCategory;
     }
 
