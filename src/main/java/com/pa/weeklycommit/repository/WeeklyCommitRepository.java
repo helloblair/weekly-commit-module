@@ -20,4 +20,8 @@ public interface WeeklyCommitRepository extends JpaRepository<WeeklyCommit, UUID
             @Param("weekOf") LocalDate weekOf);
 
     List<WeeklyCommit> findByPlanId(UUID planId);
+
+    List<WeeklyCommit> findByPlanIdOrderByPriorityRankAsc(UUID planId);
+
+    long countByPlanId(UUID planId);
 }
