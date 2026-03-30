@@ -11,6 +11,7 @@ import com.pa.weeklycommit.entity.Outcome;
 import com.pa.weeklycommit.entity.RallyCry;
 import com.pa.weeklycommit.entity.WeeklyCommit;
 import com.pa.weeklycommit.entity.WeeklyPlan;
+import com.pa.weeklycommit.model.ChessCategory;
 import com.pa.weeklycommit.model.PlanStatus;
 import com.pa.weeklycommit.exception.IllegalTransitionException;
 import com.pa.weeklycommit.repository.DefiningObjectiveRepository;
@@ -81,10 +82,26 @@ public class WeeklyCommitService {
 
         validateDraftStatus(commit.getPlan());
 
-        commit.setTitle(request.title());
-        commit.setDescription(request.description());
-
-        syncRcdoLinks(commit, request.rcdoLinks());
+        if (request.title() != null) {
+            commit.setTitle(request.title());
+        }
+        if (request.description() != null) {
+            commit.setDescription(request.description());
+        }
+        if (request.chessCategory() != null) {
+            if ("NONE".equals(request.chessCategory())) {
+                commit.setChessCategory(null);
+                commit.setPriorityRank(null);
+            } else {
+                commit.setChessCategory(ChessCategory.valueOf(request.chessCategory()));
+            }
+        }
+        if (request.priorityRank() != null) {
+            commit.setPriorityRank(request.priorityRank());
+        }
+        if (request.rcdoLinks() != null) {
+            syncRcdoLinks(commit, request.rcdoLinks());
+        }
 
         return toResponse(commitRepository.save(commit));
     }

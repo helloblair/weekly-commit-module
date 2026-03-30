@@ -21,3 +21,7 @@ spring:
 
 server:
   port: ${SERVER_PORT:8081}
+
+app:
+  security:
+    manager-auth-enabled: ${MANAGER_AUTH_ENABLED:false}
