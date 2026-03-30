@@ -1,0 +1,12 @@
+target/
+dist/
+node_modules/
+.git/
+.github/
+.claude/
+e2e/
+docs/
+*.md
+.env*
+.testcontainers.properties
+playwright-report/

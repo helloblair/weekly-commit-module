@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: weekly_commit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-build
+    command: ["java", "-jar", "target/app.jar"]
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/weekly_commit
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      SERVER_PORT: "8081"
+      SPRING_PROFILES_ACTIVE: prod
+      MANAGER_AUTH_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-build
+    command: ["npx", "webpack", "serve", "--mode", "development", "--host", "0.0.0.0"]
+    ports:
+      - "3001:3001"
+    environment:
+      REACT_APP_API_BASE_URL: http://backend:8081
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
