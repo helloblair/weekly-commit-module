@@ -100,7 +100,7 @@ export interface CommitFormData {
 export interface CommitUpdatePayload {
   title?: string;
   description?: string | null;
-  chessCategory?: ChessCategory | null;
+  chessCategory?: ChessCategory | 'NONE' | null;
   priorityRank?: number | null;
   rcdoLinks?: RCDOLink[];
 }

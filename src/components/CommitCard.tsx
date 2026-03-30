@@ -1,6 +1,7 @@
 import React from 'react';
-import type { WeeklyCommit, PlanStatus, RCDOHierarchy, ChessCategory } from '../types/domain';
+import type { WeeklyCommit, PlanStatus, RCDOHierarchy } from '../types/domain';
 import { PlanStatus as PlanStatusEnum } from '../types/domain';
+import { useTheme, chessTheme } from '../theme';
 
 interface CommitCardProps {
   commit: WeeklyCommit;
@@ -10,23 +11,17 @@ interface CommitCardProps {
   onDelete: (commitId: string) => void;
 }
 
-const CHESS_LABELS: Record<ChessCategory, { label: string; color: string; bg: string }> = {
-  KING: { label: 'King', color: '#b71c1c', bg: '#ffebee' },
-  QUEEN: { label: 'Queen', color: '#4a148c', bg: '#f3e5f5' },
-  ROOK: { label: 'Rook', color: '#0d47a1', bg: '#e3f2fd' },
-  KNIGHT: { label: 'Knight', color: '#1b5e20', bg: '#e8f5e9' },
-  PAWN: { label: 'Pawn', color: '#616161', bg: '#f5f5f5' },
-};
-
 const styles = {
   card: {
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
     padding: '16px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '8px',
+    boxShadow: 'var(--shadow)',
+    transition: 'background-color 200ms ease, border-color 200ms ease',
   },
   headerRow: {
     display: 'flex',
@@ -37,7 +32,7 @@ const styles = {
   title: {
     fontSize: '15px',
     fontWeight: 600 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
     margin: 0,
     flex: 1,
     minWidth: 0,
@@ -45,25 +40,14 @@ const styles = {
     textOverflow: 'ellipsis' as const,
     whiteSpace: 'nowrap' as const,
   },
-  badge: (color: string, bg: string) => ({
-    display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: 500 as const,
-    color,
-    backgroundColor: bg,
-    whiteSpace: 'nowrap' as const,
-    flexShrink: 0,
-  }),
   breadcrumb: {
     fontSize: '13px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     lineHeight: 1.4,
   },
   breadcrumbSeparator: {
     margin: '0 4px',
-    color: '#bbb',
+    color: 'var(--text-muted)',
   },
   actions: {
     display: 'flex',
@@ -72,21 +56,23 @@ const styles = {
   },
   actionButton: {
     padding: '4px 10px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
+    border: '1px solid var(--border)',
+    borderRadius: '6px',
+    backgroundColor: 'var(--bg-surface)',
     cursor: 'pointer' as const,
     fontSize: '13px',
-    color: '#333',
+    color: 'var(--text-secondary)',
+    transition: 'all 150ms ease',
   },
   deleteButton: {
     padding: '4px 10px',
-    border: '1px solid #e0e0e0',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
+    border: '1px solid var(--border)',
+    borderRadius: '6px',
+    backgroundColor: 'var(--bg-surface)',
     cursor: 'pointer' as const,
     fontSize: '13px',
-    color: '#d32f2f',
+    color: 'var(--error)',
+    transition: 'all 150ms ease',
   },
   carriedBadge: {
     display: 'inline-flex',
@@ -96,8 +82,8 @@ const styles = {
     borderRadius: '12px',
     fontSize: '12px',
     fontWeight: 500 as const,
-    color: '#1565c0',
-    backgroundColor: '#e3f2fd',
+    color: 'var(--primary)',
+    backgroundColor: 'var(--primary-bg)',
     whiteSpace: 'nowrap' as const,
     flexShrink: 0,
   },
@@ -126,15 +112,28 @@ export default function CommitCard({
   onEdit,
   onDelete,
 }: CommitCardProps) {
+  const { mode } = useTheme();
   const isDraft = planStatus === PlanStatusEnum.DRAFT;
-  const chessMeta = commit.chessCategory ? CHESS_LABELS[commit.chessCategory] : null;
+  const chessMeta = commit.chessCategory ? chessTheme(commit.chessCategory, mode) : null;
 
   return (
     <div style={styles.card}>
       <div style={styles.headerRow}>
         <h3 style={styles.title}>{commit.title}</h3>
         {chessMeta && (
-          <span style={styles.badge(chessMeta.color, chessMeta.bg)}>{chessMeta.label}</span>
+          <span style={{
+            display: 'inline-block',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: 500,
+            color: chessMeta.color,
+            backgroundColor: chessMeta.bg,
+            whiteSpace: 'nowrap' as const,
+            flexShrink: 0,
+          }}>
+            {chessMeta.label}
+          </span>
         )}
         {commit.carriedFromId && (
           <span style={styles.carriedBadge}>Carried forward</span>

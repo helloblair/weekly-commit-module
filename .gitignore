@@ -62,6 +62,9 @@ mvnw.cmd
 # Flyway
 flyway.conf
 
+# Docs (local-only reference material)
+docs/
+
 # Misc
 *.tmp
 *.bak

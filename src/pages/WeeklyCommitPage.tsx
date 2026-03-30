@@ -76,7 +76,7 @@ function LifecycleStepper({ status }: { status: PlanStatus }) {
               <div
                 style={{
                   ...stepperStyles.connector,
-                  backgroundColor: isPast || isCurrent ? '#1976d2' : '#e0e0e0',
+                  backgroundColor: isPast || isCurrent ? 'var(--primary)' : 'var(--border)',
                 }}
               />
             )}
@@ -84,8 +84,8 @@ function LifecycleStepper({ status }: { status: PlanStatus }) {
               <div
                 style={{
                   ...stepperStyles.dot,
-                  backgroundColor: isPast ? '#1976d2' : isCurrent ? '#1976d2' : '#e0e0e0',
-                  border: isCurrent ? '3px solid #90caf9' : '3px solid transparent',
+                  backgroundColor: isPast || isCurrent ? 'var(--primary)' : 'var(--border)',
+                  border: isCurrent ? '3px solid var(--primary-muted)' : '3px solid transparent',
                 }}
               >
                 {isPast ? '✓' : i + 1}
@@ -94,7 +94,7 @@ function LifecycleStepper({ status }: { status: PlanStatus }) {
                 <div
                   style={{
                     ...stepperStyles.label,
-                    color: isCurrent ? '#1976d2' : isPast ? '#333' : '#999',
+                    color: isCurrent ? 'var(--primary)' : isPast ? 'var(--text)' : 'var(--text-muted)',
                     fontWeight: isCurrent ? 700 : 500,
                   }}
                 >
@@ -139,6 +139,7 @@ const stepperStyles = {
     fontWeight: 600 as const,
     color: '#fff',
     flexShrink: 0,
+    transition: 'background-color 200ms ease, border-color 200ms ease',
   },
   connector: {
     height: '3px',
@@ -147,16 +148,18 @@ const stepperStyles = {
     marginTop: '-10px',
     borderRadius: '2px',
     minWidth: '24px',
+    transition: 'background-color 200ms ease',
   },
   labelGroup: {
     textAlign: 'center' as const,
   },
   label: {
     fontSize: '13px',
+    transition: 'color 200ms ease',
   },
   description: {
     fontSize: '11px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     marginTop: '2px',
   },
 };
@@ -165,11 +168,9 @@ const stepperStyles = {
 
 const styles = {
   page: {
-    maxWidth: '720px',
+    maxWidth: '1080px',
     margin: '0 auto',
     padding: '24px 16px',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
   topBar: {
     display: 'flex',
@@ -186,38 +187,40 @@ const styles = {
   },
   navButton: {
     padding: '6px 10px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
+    border: '1px solid var(--border)',
+    borderRadius: '6px',
+    backgroundColor: 'var(--bg-surface)',
     cursor: 'pointer' as const,
     fontSize: '16px',
     lineHeight: 1,
-    color: '#333',
+    color: 'var(--text-secondary)',
+    transition: 'all 150ms ease',
   },
   weekLabel: {
     fontSize: '16px',
     fontWeight: 600 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
     minWidth: '200px',
     textAlign: 'center' as const,
   },
   newButton: {
     padding: '8px 16px',
     border: 'none',
-    borderRadius: '4px',
-    backgroundColor: '#1976d2',
-    color: '#fff',
+    borderRadius: '6px',
+    backgroundColor: 'var(--primary)',
+    color: 'var(--primary-text)',
     cursor: 'pointer' as const,
     fontSize: '14px',
     fontWeight: 500 as const,
     whiteSpace: 'nowrap' as const,
+    transition: 'all 150ms ease',
   },
   newButtonDisabled: {
     padding: '8px 16px',
     border: 'none',
-    borderRadius: '4px',
-    backgroundColor: '#90caf9',
-    color: '#fff',
+    borderRadius: '6px',
+    backgroundColor: 'var(--primary-muted)',
+    color: 'var(--primary-text)',
     cursor: 'not-allowed' as const,
     fontSize: '14px',
     fontWeight: 500 as const,
@@ -231,19 +234,20 @@ const styles = {
   transitionButton: {
     padding: '8px 20px',
     border: 'none',
-    borderRadius: '4px',
-    backgroundColor: '#1976d2',
-    color: '#fff',
+    borderRadius: '6px',
+    backgroundColor: 'var(--primary)',
+    color: 'var(--primary-text)',
     cursor: 'pointer' as const,
     fontSize: '14px',
     fontWeight: 500 as const,
+    transition: 'all 150ms ease',
   },
   transitionButtonDisabled: {
     padding: '8px 20px',
     border: 'none',
-    borderRadius: '4px',
-    backgroundColor: '#90caf9',
-    color: '#fff',
+    borderRadius: '6px',
+    backgroundColor: 'var(--primary-muted)',
+    color: 'var(--primary-text)',
     cursor: 'not-allowed' as const,
     fontSize: '14px',
     fontWeight: 500 as const,
@@ -255,23 +259,36 @@ const styles = {
   },
   empty: {
     textAlign: 'center' as const,
-    color: '#888',
+    color: 'var(--text-muted)',
     fontSize: '15px',
     padding: '48px 16px',
   },
   loading: {
     textAlign: 'center' as const,
-    color: '#666',
+    color: 'var(--text-secondary)',
     fontSize: '14px',
     padding: '48px 16px',
   },
   errorBanner: {
-    backgroundColor: '#fdecea',
-    color: '#611a15',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     padding: '10px 14px',
     borderRadius: '6px',
     fontSize: '13px',
     marginBottom: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  retryButton: {
+    padding: '2px 8px',
+    border: '1px solid var(--error-border)',
+    borderRadius: '6px',
+    backgroundColor: 'transparent',
+    color: 'var(--error-text)',
+    cursor: 'pointer' as const,
+    fontSize: '12px',
+    transition: 'all 150ms ease',
   },
 };
 
@@ -479,19 +496,10 @@ export default function WeeklyCommitPage({ userId, orgId }: WeeklyCommitPageProp
 
       {error && (
         <div style={styles.errorBanner}>
-          {error}
+          <span>{error}</span>
           <button
             type="button"
-            style={{
-              marginLeft: '12px',
-              padding: '2px 8px',
-              border: '1px solid #611a15',
-              borderRadius: '4px',
-              backgroundColor: 'transparent',
-              color: '#611a15',
-              cursor: 'pointer',
-              fontSize: '12px',
-            }}
+            style={styles.retryButton}
             onClick={() => { setError(null); loadWeek(); }}
           >
             Retry

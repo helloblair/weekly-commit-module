@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  rectIntersection,
   useSensor,
   useSensors,
   PointerSensor,
@@ -19,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { WeeklyCommit, PlanStatus, ChessCategory } from '../types/domain';
 import { PlanStatus as PlanStatusEnum } from '../types/domain';
 import { updateCommit } from '../api/client';
+import { useTheme, chessTheme } from '../theme';
 
 // --- Props ---
 
@@ -35,14 +36,6 @@ const CONTAINER_UNCATEGORIZED = 'uncategorized' as const;
 type ContainerId = ChessCategory | typeof CONTAINER_UNCATEGORIZED;
 
 const CATEGORIES: ChessCategory[] = ['KING', 'QUEEN', 'ROOK', 'KNIGHT', 'PAWN'];
-
-const COLUMN_META: Record<ChessCategory, { label: string; color: string; bg: string; tint: string }> = {
-  KING: { label: 'King', color: '#b71c1c', bg: '#ffebee', tint: '#fff5f5' },
-  QUEEN: { label: 'Queen', color: '#4a148c', bg: '#f3e5f5', tint: '#faf5ff' },
-  ROOK: { label: 'Rook', color: '#0d47a1', bg: '#e3f2fd', tint: '#f0f7ff' },
-  KNIGHT: { label: 'Knight', color: '#1b5e20', bg: '#e8f5e9', tint: '#f2faf3' },
-  PAWN: { label: 'Pawn', color: '#616161', bg: '#f5f5f5', tint: '#fafafa' },
-};
 
 // --- Helpers ---
 
@@ -120,7 +113,7 @@ function SortableCard({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
-    boxShadow: isDragging ? '0 4px 12px rgba(0,0,0,0.15)' : undefined,
+    boxShadow: isDragging ? 'var(--shadow-md)' : undefined,
     zIndex: isDragging ? 10 : undefined,
   };
 
@@ -171,8 +164,8 @@ function DroppableColumn({
       ref={setNodeRef}
       style={{
         ...columnStyles.dropZone,
-        backgroundColor: isOverColumn ? 'rgba(25, 118, 210, 0.06)' : undefined,
-        borderColor: isOverColumn ? '#1976d2' : '#e0e0e0',
+        backgroundColor: isOverColumn ? 'var(--primary-bg)' : undefined,
+        borderColor: isOverColumn ? 'var(--primary)' : 'var(--border)',
       }}
     >
       {children}
@@ -188,6 +181,7 @@ export default function ChessBoard({
   planStatus,
   onCommitsReordered,
 }: ChessBoardProps) {
+  const { mode } = useTheme();
   const isDragDisabled = planStatus !== PlanStatusEnum.DRAFT;
 
   const initialGroups = useMemo(() => groupCommitsByCategory(commits), [commits]);
@@ -326,7 +320,6 @@ export default function ChessBoard({
                 : (currentContainer as ChessCategory);
             await updateCommit(commit.id, {
               chessCategory: newCategory,
-              rcdoLinks: commit.rcdoLinks,
             });
           }
         }
@@ -389,7 +382,7 @@ export default function ChessBoard({
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={rectIntersection}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
@@ -423,7 +416,7 @@ export default function ChessBoard({
         {/* Category columns */}
         <div style={boardStyles.columnsRow}>
           {CATEGORIES.map((cat) => {
-            const meta = COLUMN_META[cat];
+            const meta = chessTheme(cat, mode);
             const items = groups[cat];
             return (
               <div key={cat} style={{ ...columnStyles.column, backgroundColor: meta.tint }}>
@@ -472,7 +465,7 @@ const boardStyles = {
   empty: {
     padding: '32px',
     textAlign: 'center' as const,
-    color: '#888',
+    color: 'var(--text-muted)',
     fontSize: '14px',
   },
   error: {
@@ -480,27 +473,28 @@ const boardStyles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '10px 16px',
-    backgroundColor: '#ffebee',
-    border: '1px solid #ef9a9a',
+    backgroundColor: 'var(--error-bg)',
+    border: '1px solid var(--error-border)',
     borderRadius: '6px',
-    color: '#c62828',
+    color: 'var(--error-text)',
     fontSize: '13px',
   },
   errorDismiss: {
     padding: '4px 10px',
-    border: '1px solid #ef9a9a',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
-    color: '#c62828',
+    border: '1px solid var(--error-border)',
+    borderRadius: '6px',
+    backgroundColor: 'var(--bg-surface)',
+    color: 'var(--error)',
     cursor: 'pointer' as const,
     fontSize: '12px',
+    transition: 'all 150ms ease',
   },
   savingBanner: {
     padding: '8px 16px',
-    backgroundColor: '#e3f2fd',
-    border: '1px solid #90caf9',
+    backgroundColor: 'var(--primary-bg)',
+    border: '1px solid var(--primary-muted)',
     borderRadius: '6px',
-    color: '#1565c0',
+    color: 'var(--primary)',
     fontSize: '13px',
     textAlign: 'center' as const,
   },
@@ -514,12 +508,12 @@ const boardStyles = {
     margin: '0 0 8px',
     fontSize: '14px',
     fontWeight: 600 as const,
-    color: '#555',
+    color: 'var(--text-secondary)',
   },
   commitCount: {
     fontSize: '12px',
     fontWeight: 400 as const,
-    color: '#999',
+    color: 'var(--text-muted)',
   },
   columnsRow: {
     display: 'flex',
@@ -531,12 +525,13 @@ const boardStyles = {
 const columnStyles = {
   column: {
     flex: '1 1 0',
-    minWidth: '180px',
+    minWidth: '0',
     borderRadius: '8px',
     padding: '12px',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '8px',
+    transition: 'background-color 200ms ease',
   },
   header: {
     display: 'flex',
@@ -550,23 +545,23 @@ const columnStyles = {
   },
   countBadge: {
     fontSize: '11px',
-    color: '#888',
+    color: 'var(--text-muted)',
   },
   dropZone: {
     flex: 1,
     minHeight: '60px',
     borderRadius: '6px',
-    border: '2px dashed #e0e0e0',
+    border: '2px dashed var(--border)',
     padding: '6px',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '6px',
-    transition: 'background-color 150ms, border-color 150ms',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
   },
   emptyHint: {
     padding: '16px',
     textAlign: 'center' as const,
-    color: '#bbb',
+    color: 'var(--text-muted)',
     fontSize: '12px',
   },
 };
@@ -577,18 +572,19 @@ const cardStyles = {
     alignItems: 'flex-start',
     gap: '8px',
     padding: '10px 12px',
-    backgroundColor: '#fff',
-    border: '1px solid #e0e0e0',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border)',
     borderRadius: '6px',
     cursor: 'default' as const,
+    transition: 'background-color 200ms ease, border-color 200ms ease',
   },
   overlayCard: {
-    boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+    boxShadow: 'var(--shadow-lg)',
     cursor: 'grabbing' as const,
   },
   dragHandle: {
     cursor: 'grab' as const,
-    color: '#bbb',
+    color: 'var(--text-muted)',
     fontSize: '14px',
     lineHeight: '1',
     userSelect: 'none' as const,
@@ -602,14 +598,14 @@ const cardStyles = {
   cardTitle: {
     fontSize: '13px',
     fontWeight: 500 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
     overflow: 'hidden' as const,
     textOverflow: 'ellipsis' as const,
     whiteSpace: 'nowrap' as const,
   },
   cardBreadcrumb: {
     fontSize: '11px',
-    color: '#888',
+    color: 'var(--text-muted)',
     marginTop: '2px',
   },
 };

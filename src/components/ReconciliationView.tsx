@@ -7,6 +7,7 @@ import type {
 } from '../types/domain';
 import { CompletionStatus as CS } from '../types/domain';
 import { submitReconciliation } from '../api/client';
+import { useTheme, chessTheme } from '../theme';
 
 interface ReconciliationViewProps {
   planId: string;
@@ -21,13 +22,15 @@ const COMPLETION_OPTIONS: { value: CompletionStatus; label: string }[] = [
   { value: CS.BLOCKED, label: 'Blocked' },
 ];
 
-const CHESS_LABELS: Record<ChessCategory, string> = {
-  KING: 'King',
-  QUEEN: 'Queen',
-  ROOK: 'Rook',
-  KNIGHT: 'Knight',
-  PAWN: 'Pawn',
-};
+// Saturated status colors for selected chip backgrounds (work in both modes)
+function statusColor(status: CompletionStatus): string {
+  switch (status) {
+    case CS.COMPLETED: return '#16a34a';
+    case CS.PARTIAL: return '#d97706';
+    case CS.NOT_STARTED: return '#6b7280';
+    case CS.BLOCKED: return '#dc2626';
+  }
+}
 
 interface CommitReconciliation {
   completionStatus: CompletionStatus | '';
@@ -54,6 +57,7 @@ export default function ReconciliationView({
   commits,
   onComplete,
 }: ReconciliationViewProps) {
+  const { mode } = useTheme();
   const [entries, setEntries] = useState(() => buildInitialState(commits));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,14 +125,25 @@ export default function ReconciliationView({
             entry.completionStatus === CS.PARTIAL ||
             entry.completionStatus === CS.NOT_STARTED ||
             entry.completionStatus === CS.BLOCKED;
+          const chessMeta = commit.chessCategory ? chessTheme(commit.chessCategory, mode) : null;
 
           return (
             <div key={commit.id} style={rvStyles.card}>
               <div style={rvStyles.cardHeader}>
                 <h3 style={rvStyles.cardTitle}>{commit.title}</h3>
-                {commit.chessCategory && (
-                  <span style={rvStyles.chessBadge}>
-                    {CHESS_LABELS[commit.chessCategory]}
+                {chessMeta && (
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: chessMeta.color,
+                    backgroundColor: chessMeta.bg,
+                    whiteSpace: 'nowrap' as const,
+                    flexShrink: 0,
+                  }}>
+                    {chessMeta.label}
                   </span>
                 )}
               </div>
@@ -149,9 +164,9 @@ export default function ReconciliationView({
                         type="button"
                         style={{
                           ...rvStyles.statusChip,
-                          backgroundColor: isSelected ? statusColor(opt.value) : '#f5f5f5',
-                          color: isSelected ? '#fff' : '#555',
-                          borderColor: isSelected ? statusColor(opt.value) : '#ddd',
+                          backgroundColor: isSelected ? statusColor(opt.value) : 'var(--bg-inset)',
+                          color: isSelected ? '#fff' : 'var(--text-secondary)',
+                          borderColor: isSelected ? statusColor(opt.value) : 'var(--border)',
                         }}
                         onClick={() => updateEntry(commit.id, 'completionStatus', opt.value)}
                       >
@@ -230,19 +245,6 @@ export default function ReconciliationView({
   );
 }
 
-function statusColor(status: CompletionStatus): string {
-  switch (status) {
-    case CS.COMPLETED:
-      return '#2e7d32';
-    case CS.PARTIAL:
-      return '#ed6c02';
-    case CS.NOT_STARTED:
-      return '#757575';
-    case CS.BLOCKED:
-      return '#d32f2f';
-  }
-}
-
 const rvStyles = {
   container: {
     display: 'flex',
@@ -253,16 +255,16 @@ const rvStyles = {
     margin: 0,
     fontSize: '20px',
     fontWeight: 600 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
   },
   subtitle: {
     margin: 0,
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   error: {
-    backgroundColor: '#fdecea',
-    color: '#611a15',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     padding: '10px 14px',
     borderRadius: '6px',
     fontSize: '13px',
@@ -273,13 +275,15 @@ const rvStyles = {
     gap: '16px',
   },
   card: {
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
     padding: '16px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
+    boxShadow: 'var(--shadow)',
+    transition: 'background-color 200ms ease, border-color 200ms ease',
   },
   cardHeader: {
     display: 'flex',
@@ -291,25 +295,14 @@ const rvStyles = {
     margin: 0,
     fontSize: '15px',
     fontWeight: 600 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
     flex: 1,
     minWidth: 0,
-  },
-  chessBadge: {
-    display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: 500 as const,
-    color: '#555',
-    backgroundColor: '#f0f0f0',
-    whiteSpace: 'nowrap' as const,
-    flexShrink: 0,
   },
   plannedDescription: {
     margin: 0,
     fontSize: '13px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     lineHeight: 1.4,
   },
   fieldGroup: {
@@ -320,10 +313,10 @@ const rvStyles = {
   label: {
     fontSize: '13px',
     fontWeight: 500 as const,
-    color: '#333',
+    color: 'var(--text-secondary)',
   },
   required: {
-    color: '#d32f2f',
+    color: 'var(--error)',
     marginLeft: '2px',
   },
   statusRow: {
@@ -334,25 +327,28 @@ const rvStyles = {
   statusChip: {
     padding: '6px 14px',
     borderRadius: '16px',
-    border: '1px solid #ddd',
+    border: '1px solid var(--border)',
     cursor: 'pointer' as const,
     fontSize: '13px',
     fontWeight: 500 as const,
-    transition: 'all 150ms',
+    transition: 'all 150ms ease',
   },
   textarea: {
     width: '100%',
     padding: '8px 12px',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
+    borderRadius: '6px',
+    border: '1px solid var(--input-border)',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text)',
     fontSize: '14px',
     minHeight: '60px',
     resize: 'vertical' as const,
     fontFamily: 'inherit',
     boxSizing: 'border-box' as const,
+    transition: 'border-color 150ms ease',
   },
   fieldError: {
-    color: '#d32f2f',
+    color: 'var(--error)',
     fontSize: '12px',
   },
   checkboxRow: {
@@ -364,7 +360,7 @@ const rvStyles = {
   },
   checkboxLabel: {
     fontSize: '13px',
-    color: '#333',
+    color: 'var(--text-secondary)',
   },
   footer: {
     display: 'flex',
@@ -375,25 +371,26 @@ const rvStyles = {
   submit: {
     padding: '10px 24px',
     border: 'none',
-    borderRadius: '4px',
-    backgroundColor: '#1976d2',
-    color: '#fff',
+    borderRadius: '6px',
+    backgroundColor: 'var(--primary)',
+    color: 'var(--primary-text)',
     cursor: 'pointer' as const,
     fontSize: '14px',
     fontWeight: 500 as const,
+    transition: 'all 150ms ease',
   },
   submitDisabled: {
     padding: '10px 24px',
     border: 'none',
-    borderRadius: '4px',
-    backgroundColor: '#90caf9',
-    color: '#fff',
+    borderRadius: '6px',
+    backgroundColor: 'var(--primary-muted)',
+    color: 'var(--primary-text)',
     cursor: 'not-allowed' as const,
     fontSize: '14px',
     fontWeight: 500 as const,
   },
   footerHint: {
     fontSize: '12px',
-    color: '#999',
+    color: 'var(--text-muted)',
   },
 };

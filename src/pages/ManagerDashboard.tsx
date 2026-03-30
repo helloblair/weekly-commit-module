@@ -11,6 +11,7 @@ import type {
   PlanStatus,
 } from '../types/domain';
 import { fetchTeamRollup, fetchRcdoCoverage } from '../api/client';
+import { useTheme, completionTheme, planStatusTheme, chessTheme } from '../theme';
 
 interface ManagerDashboardProps {
   managerId: string;
@@ -58,20 +59,6 @@ function formatWeekLabel(monday: Date): string {
 
 type TabId = 'team' | 'coverage';
 
-const STATUS_COLORS: Record<PlanStatus, { color: string; bg: string }> = {
-  DRAFT: { color: '#616161', bg: '#f5f5f5' },
-  LOCKED: { color: '#0d47a1', bg: '#e3f2fd' },
-  RECONCILING: { color: '#e65100', bg: '#fff3e0' },
-  RECONCILED: { color: '#1b5e20', bg: '#e8f5e9' },
-};
-
-const COMPLETION_COLORS: Record<CompletionStatus, string> = {
-  COMPLETED: '#2e7d32',
-  PARTIAL: '#ed6c02',
-  NOT_STARTED: '#757575',
-  BLOCKED: '#d32f2f',
-};
-
 const CHESS_LABELS: Record<ChessCategory, string> = {
   KING: 'King', QUEEN: 'Queen', ROOK: 'Rook', KNIGHT: 'Knight', PAWN: 'Pawn',
 };
@@ -89,6 +76,7 @@ const EMPTY_FILTERS: Filters = { memberId: '', chessCategory: '', completionStat
 // ---- main component ----
 
 export default function ManagerDashboard({ managerId, orgId }: ManagerDashboardProps) {
+  const { mode } = useTheme();
   const [weekMonday, setWeekMonday] = useState(() => getMondayOfWeek(new Date()));
   const [rollup, setRollup] = useState<TeamRollup | null>(null);
   const [coverage, setCoverage] = useState<RCDOCoverage | null>(null);
@@ -164,13 +152,13 @@ export default function ManagerDashboard({ managerId, orgId }: ManagerDashboardP
       {/* Aggregate stats bar */}
       {rollup && (
         <div style={s.statsBar}>
-          <StatCard label="Total Commits" value={teamStats.total} color="#333" />
-          <StatCard label="Completed" value={teamStats.completed} color="#2e7d32" />
-          <StatCard label="Partial" value={teamStats.partial} color="#ed6c02" />
-          <StatCard label="Not Started" value={teamStats.notStarted} color="#757575" />
-          <StatCard label="Blocked" value={teamStats.blocked} color="#d32f2f" />
+          <StatCard label="Total Commits" value={teamStats.total} color="var(--text)" />
+          <StatCard label="Completed" value={teamStats.completed} color={completionTheme('COMPLETED', mode).color} />
+          <StatCard label="Partial" value={teamStats.partial} color={completionTheme('PARTIAL', mode).color} />
+          <StatCard label="Not Started" value={teamStats.notStarted} color={completionTheme('NOT_STARTED', mode).color} />
+          <StatCard label="Blocked" value={teamStats.blocked} color={completionTheme('BLOCKED', mode).color} />
           {uncoveredCount > 0 && (
-            <StatCard label="Uncovered Outcomes" value={uncoveredCount} color="#b71c1c" />
+            <StatCard label="Uncovered Outcomes" value={uncoveredCount} color="var(--error)" />
           )}
         </div>
       )}
@@ -325,7 +313,8 @@ function MemberCard({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const statusMeta = STATUS_COLORS[member.planStatus];
+  const { mode } = useTheme();
+  const statusMeta = planStatusTheme(member.planStatus, mode);
   const pct = member.stats.total > 0
     ? Math.round((member.stats.completed / member.stats.total) * 100)
     : 0;
@@ -352,9 +341,9 @@ function MemberCard({
       <div style={s.progressBar}>
         {member.stats.total > 0 && (
           <>
-            <div style={{ ...s.progressSegment, width: String((member.stats.completed / member.stats.total) * 100) + '%', backgroundColor: '#2e7d32' }} />
-            <div style={{ ...s.progressSegment, width: String((member.stats.partial / member.stats.total) * 100) + '%', backgroundColor: '#ed6c02' }} />
-            <div style={{ ...s.progressSegment, width: String((member.stats.blocked / member.stats.total) * 100) + '%', backgroundColor: '#d32f2f' }} />
+            <div style={{ ...s.progressSegment, width: String((member.stats.completed / member.stats.total) * 100) + '%', backgroundColor: completionTheme('COMPLETED', mode).color }} />
+            <div style={{ ...s.progressSegment, width: String((member.stats.partial / member.stats.total) * 100) + '%', backgroundColor: completionTheme('PARTIAL', mode).color }} />
+            <div style={{ ...s.progressSegment, width: String((member.stats.blocked / member.stats.total) * 100) + '%', backgroundColor: completionTheme('BLOCKED', mode).color }} />
           </>
         )}
       </div>
@@ -365,22 +354,31 @@ function MemberCard({
           {filteredCommits.length === 0 ? (
             <div style={s.emptyRow}>No commits match filters</div>
           ) : (
-            filteredCommits.map((c) => (
-              <div key={c.id} style={s.commitRow}>
-                <span style={s.commitTitle}>{c.title}</span>
-                {c.chessCategory && (
-                  <span style={s.chessBadge}>{CHESS_LABELS[c.chessCategory]}</span>
-                )}
-                {c.completionStatus && (
-                  <span style={{ ...s.completionBadge, color: COMPLETION_COLORS[c.completionStatus] }}>
-                    {c.completionStatus.replace('_', ' ')}
-                  </span>
-                )}
-                {c.rcdoPath && (
-                  <span style={s.rcdoPath}>{c.rcdoPath}</span>
-                )}
-              </div>
-            ))
+            filteredCommits.map((c) => {
+              const compMeta = c.completionStatus ? completionTheme(c.completionStatus, mode) : null;
+              return (
+                <div key={c.id} style={s.commitRow}>
+                  <span style={s.commitTitle}>{c.title}</span>
+                  {c.chessCategory && (
+                    <span style={{
+                      ...s.chessBadge,
+                      color: chessTheme(c.chessCategory, mode).color,
+                      backgroundColor: chessTheme(c.chessCategory, mode).bg,
+                    }}>
+                      {CHESS_LABELS[c.chessCategory]}
+                    </span>
+                  )}
+                  {compMeta && (
+                    <span style={{ ...s.completionBadge, color: compMeta.color }}>
+                      {compMeta.label}
+                    </span>
+                  )}
+                  {c.rcdoPath && (
+                    <span style={s.rcdoPath}>{c.rcdoPath}</span>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
@@ -438,6 +436,7 @@ function DefiningObjectiveNode({ node }: { node: DefiningObjectiveCoverage }) {
 }
 
 function OutcomeNode({ node }: { node: OutcomeCoverage }) {
+  const { mode } = useTheme();
   const [open, setOpen] = useState(false);
   const pct = Math.round(node.completionRate * 100);
 
@@ -447,7 +446,7 @@ function OutcomeNode({ node }: { node: OutcomeCoverage }) {
         <span style={s.treeToggle}>{node.commits.length > 0 ? (open ? '▾' : '▸') : ' '}</span>
         <span style={{
           ...s.treeLabel,
-          color: node.covered ? '#333' : '#b71c1c',
+          color: node.covered ? 'var(--text)' : 'var(--error)',
           fontWeight: node.covered ? 400 : 600,
         }}>
           {node.title}
@@ -460,17 +459,20 @@ function OutcomeNode({ node }: { node: OutcomeCoverage }) {
       </div>
       {open && node.commits.length > 0 && (
         <div style={s.outcomeCommits}>
-          {node.commits.map((c) => (
-            <div key={c.commitId} style={s.outcomeCommitRow}>
-              <span style={s.ocMember}>{c.memberName}</span>
-              <span style={s.ocTitle}>{c.commitTitle}</span>
-              {c.completionStatus && (
-                <span style={{ ...s.completionBadge, color: COMPLETION_COLORS[c.completionStatus] }}>
-                  {c.completionStatus.replace('_', ' ')}
-                </span>
-              )}
-            </div>
-          ))}
+          {node.commits.map((c) => {
+            const compMeta = c.completionStatus ? completionTheme(c.completionStatus, mode) : null;
+            return (
+              <div key={c.commitId} style={s.outcomeCommitRow}>
+                <span style={s.ocMember}>{c.memberName}</span>
+                <span style={s.ocTitle}>{c.commitTitle}</span>
+                {compMeta && (
+                  <span style={{ ...s.completionBadge, color: compMeta.color }}>
+                    {compMeta.label}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -484,7 +486,6 @@ const s = {
     maxWidth: '900px',
     margin: '0 auto',
     padding: '24px 16px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
   header: {
     display: 'flex',
@@ -498,7 +499,7 @@ const s = {
     margin: 0,
     fontSize: '22px',
     fontWeight: 700 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
   },
   weekNav: {
     display: 'flex',
@@ -507,18 +508,19 @@ const s = {
   },
   navBtn: {
     padding: '6px 10px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
+    border: '1px solid var(--border)',
+    borderRadius: '6px',
+    backgroundColor: 'var(--bg-surface)',
     cursor: 'pointer' as const,
     fontSize: '16px',
     lineHeight: 1,
-    color: '#333',
+    color: 'var(--text-secondary)',
+    transition: 'all 150ms ease',
   },
   weekLabel: {
     fontSize: '15px',
     fontWeight: 600 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
     minWidth: '180px',
     textAlign: 'center' as const,
   },
@@ -533,9 +535,11 @@ const s = {
     minWidth: '90px',
     padding: '10px 14px',
     borderRadius: '8px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border)',
     textAlign: 'center' as const,
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
+    boxShadow: 'var(--shadow)',
+    transition: 'background-color 200ms ease, border-color 200ms ease',
   },
   statValue: {
     fontSize: '22px',
@@ -543,13 +547,13 @@ const s = {
   },
   statLabel: {
     fontSize: '11px',
-    color: '#888',
+    color: 'var(--text-muted)',
     marginTop: '2px',
   },
   tabs: {
     display: 'flex',
     gap: '0px',
-    borderBottom: '2px solid #e0e0e0',
+    borderBottom: '2px solid var(--border)',
     marginBottom: '16px',
   },
   tab: {
@@ -560,26 +564,27 @@ const s = {
     cursor: 'pointer' as const,
     fontSize: '14px',
     fontWeight: 500 as const,
-    color: '#666',
+    color: 'var(--text-secondary)',
     marginBottom: '-2px',
+    transition: 'color 150ms ease',
   },
   tabActive: {
     padding: '10px 20px',
     border: 'none',
-    borderBottom: '2px solid #1976d2',
+    borderBottom: '2px solid var(--primary)',
     backgroundColor: 'transparent',
     cursor: 'pointer' as const,
     fontSize: '14px',
     fontWeight: 600 as const,
-    color: '#1976d2',
+    color: 'var(--primary)',
     marginBottom: '-2px',
   },
   error: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fdecea',
-    color: '#611a15',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error-text)',
     padding: '10px 14px',
     borderRadius: '6px',
     fontSize: '13px',
@@ -587,16 +592,17 @@ const s = {
   },
   retryBtn: {
     padding: '4px 12px',
-    border: '1px solid #611a15',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
-    color: '#611a15',
+    border: '1px solid var(--error-border)',
+    borderRadius: '6px',
+    backgroundColor: 'var(--bg-surface)',
+    color: 'var(--error)',
     cursor: 'pointer' as const,
     fontSize: '12px',
+    transition: 'all 150ms ease',
   },
   loading: {
     textAlign: 'center' as const,
-    color: '#666',
+    color: 'var(--text-secondary)',
     fontSize: '14px',
     padding: '48px 16px',
   },
@@ -614,19 +620,22 @@ const s = {
   },
   filterSelect: {
     padding: '6px 10px',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
+    borderRadius: '6px',
+    border: '1px solid var(--input-border)',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text)',
     fontSize: '13px',
-    backgroundColor: '#fff',
+    transition: 'border-color 150ms ease',
   },
   clearBtn: {
     padding: '6px 12px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
+    border: '1px solid var(--border)',
+    borderRadius: '6px',
+    backgroundColor: 'var(--bg-surface)',
     cursor: 'pointer' as const,
     fontSize: '12px',
-    color: '#666',
+    color: 'var(--text-secondary)',
+    transition: 'all 150ms ease',
   },
   // Member cards
   memberList: {
@@ -635,10 +644,12 @@ const s = {
     gap: '10px',
   },
   memberCard: {
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
     overflow: 'hidden' as const,
+    boxShadow: 'var(--shadow)',
+    transition: 'background-color 200ms ease, border-color 200ms ease',
   },
   memberHeader: {
     display: 'flex',
@@ -658,7 +669,7 @@ const s = {
   memberName: {
     fontSize: '15px',
     fontWeight: 600 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
   },
   statusBadge: {
     display: 'inline-block',
@@ -676,24 +687,24 @@ const s = {
   memberPct: {
     fontSize: '16px',
     fontWeight: 700 as const,
-    color: '#333',
+    color: 'var(--text)',
   },
   memberStats: {
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-muted)',
   },
   expandIcon: {
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-muted)',
   },
   progressBar: {
     display: 'flex',
     height: '4px',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'var(--bg-inset)',
   },
   progressSegment: {
     height: '100%',
-    transition: 'width 300ms',
+    transition: 'width 300ms ease',
   },
   // Commit table (expanded)
   commitTable: {
@@ -707,12 +718,12 @@ const s = {
     alignItems: 'center',
     gap: '8px',
     padding: '6px 0',
-    borderBottom: '1px solid #f5f5f5',
+    borderBottom: '1px solid var(--border-subtle)',
     flexWrap: 'wrap' as const,
   },
   commitTitle: {
     fontSize: '13px',
-    color: '#333',
+    color: 'var(--text)',
     flex: 1,
     minWidth: 0,
   },
@@ -721,17 +732,14 @@ const s = {
     padding: '1px 6px',
     borderRadius: '10px',
     fontSize: '11px',
-    color: '#555',
-    backgroundColor: '#f0f0f0',
   },
   completionBadge: {
     fontSize: '11px',
     fontWeight: 500 as const,
-    textTransform: 'capitalize' as const,
   },
   rcdoPath: {
     fontSize: '11px',
-    color: '#999',
+    color: 'var(--text-muted)',
     maxWidth: '200px',
     overflow: 'hidden' as const,
     textOverflow: 'ellipsis' as const,
@@ -740,14 +748,14 @@ const s = {
   emptyRow: {
     padding: '12px 0',
     fontSize: '13px',
-    color: '#999',
+    color: 'var(--text-muted)',
     textAlign: 'center' as const,
   },
   // RCDO coverage tree
   coverageSubtitle: {
     margin: 0,
     fontSize: '13px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   coverageTree: {
     display: 'flex',
@@ -769,13 +777,13 @@ const s = {
   treeToggle: {
     width: '14px',
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-muted)',
     flexShrink: 0,
     textAlign: 'center' as const,
   },
   treeLabel: {
     fontSize: '14px',
-    color: '#333',
+    color: 'var(--text)',
   },
   uncoveredBadge: {
     display: 'inline-block',
@@ -783,17 +791,17 @@ const s = {
     borderRadius: '10px',
     fontSize: '11px',
     fontWeight: 500 as const,
-    color: '#b71c1c',
-    backgroundColor: '#ffebee',
+    color: 'var(--error)',
+    backgroundColor: 'var(--error-bg)',
   },
   coveragePct: {
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-muted)',
   },
   outcomeCommits: {
     marginLeft: '20px',
     paddingLeft: '12px',
-    borderLeft: '2px solid #e0e0e0',
+    borderLeft: '2px solid var(--border)',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '2px',
@@ -807,11 +815,11 @@ const s = {
   },
   ocMember: {
     fontWeight: 500 as const,
-    color: '#555',
+    color: 'var(--text-secondary)',
     minWidth: '80px',
   },
   ocTitle: {
-    color: '#333',
+    color: 'var(--text)',
     flex: 1,
     minWidth: 0,
   },

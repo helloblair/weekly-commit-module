@@ -1,33 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import WeeklyCommitPage from "./pages/WeeklyCommitPage";
 import ManagerDashboard from "./pages/ManagerDashboard";
+import { setAuthTokenProvider } from "./api/client";
+import { ThemeProvider, ThemeToggle } from "./theme";
 
-// Stub IDs — will be replaced with real auth context from host app in Phase 6
-const STUB_USER_ID = "00000000-0000-0000-0000-000000000001";
-const STUB_ORG_ID = "00000000-0000-0000-0000-000000000010";
-const STUB_MANAGER_ID = "00000000-0000-0000-0000-000000000099";
+// Dev-mode fallbacks — used only when running standalone (no host app)
+const DEV_DEFAULTS = {
+  userId: "00000000-0000-0000-0000-000000000001",
+  orgId: "00000000-0000-0000-0000-000000000010",
+  managerId: "00000000-0000-0000-0000-000000000099",
+};
+
+// Props the host app passes when mounting this module via Module Federation
+export interface WeeklyCommitModuleProps {
+  userId?: string;
+  orgId?: string;
+  managerId?: string;
+  tokenProvider?: () => string;
+}
 
 type View = "my-week" | "manager";
 
-function App() {
+function App({ userId, orgId, managerId, tokenProvider }: WeeklyCommitModuleProps) {
+  const resolvedUserId = userId ?? DEV_DEFAULTS.userId;
+  const resolvedOrgId = orgId ?? DEV_DEFAULTS.orgId;
+  const resolvedManagerId = managerId ?? DEV_DEFAULTS.managerId;
+
+  useEffect(() => {
+    if (tokenProvider) {
+      setAuthTokenProvider(tokenProvider);
+    }
+  }, [tokenProvider]);
+
   const [view, setView] = useState<View>("my-week");
 
   return (
-    <div>
-      <nav style={{ display: "flex", gap: "8px", padding: "12px 16px", borderBottom: "1px solid #e0e0e0" }}>
+    <div style={{ minHeight: "100vh" }}>
+      <nav style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "4px",
+        padding: "10px 16px",
+        borderBottom: "1px solid var(--border)",
+        backgroundColor: "var(--bg-surface)",
+        transition: "background-color 200ms ease, border-color 200ms ease",
+      }}>
         <button
           type="button"
           onClick={() => { setView("my-week"); }}
           style={{
-            padding: "6px 14px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-            backgroundColor: view === "my-week" ? "#1976d2" : "#fff",
-            color: view === "my-week" ? "#fff" : "#333",
+            padding: "7px 16px",
+            border: "none",
+            borderRadius: "6px",
+            backgroundColor: view === "my-week" ? "var(--primary)" : "transparent",
+            color: view === "my-week" ? "var(--primary-text)" : "var(--text-secondary)",
             cursor: "pointer",
             fontSize: "13px",
             fontWeight: 500,
+            transition: "all 150ms ease",
           }}
         >
           My Week
@@ -36,38 +67,45 @@ function App() {
           type="button"
           onClick={() => { setView("manager"); }}
           style={{
-            padding: "6px 14px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-            backgroundColor: view === "manager" ? "#1976d2" : "#fff",
-            color: view === "manager" ? "#fff" : "#333",
+            padding: "7px 16px",
+            border: "none",
+            borderRadius: "6px",
+            backgroundColor: view === "manager" ? "var(--primary)" : "transparent",
+            color: view === "manager" ? "var(--primary-text)" : "var(--text-secondary)",
             cursor: "pointer",
             fontSize: "13px",
             fontWeight: 500,
+            transition: "all 150ms ease",
           }}
         >
           Team Dashboard
         </button>
+        <div style={{ marginLeft: "auto" }}>
+          <ThemeToggle />
+        </div>
       </nav>
       {view === "my-week" ? (
-        <WeeklyCommitPage userId={STUB_USER_ID} orgId={STUB_ORG_ID} />
+        <WeeklyCommitPage userId={resolvedUserId} orgId={resolvedOrgId} />
       ) : (
-        <ManagerDashboard managerId={STUB_MANAGER_ID} orgId={STUB_ORG_ID} />
+        <ManagerDashboard managerId={resolvedManagerId} orgId={resolvedOrgId} />
       )}
     </div>
   );
 }
 
+// Standalone mount — only runs when loaded directly (not via Module Federation)
 const container = document.getElementById("root");
 if (container) {
   const root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <App />
-    </React.StrictMode>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </React.StrictMode>,
   );
 }
 
 // Module Federation exports — host app imports these individually
 export { WeeklyCommitPage, ManagerDashboard };
-export default WeeklyCommitPage;
+export default App;

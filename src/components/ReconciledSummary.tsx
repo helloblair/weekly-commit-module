@@ -1,25 +1,11 @@
 import React from 'react';
-import type { WeeklyCommit, CompletionStatus, ChessCategory } from '../types/domain';
+import type { WeeklyCommit, CompletionStatus } from '../types/domain';
 import { CompletionStatus as CS } from '../types/domain';
+import { useTheme, completionTheme, chessTheme } from '../theme';
 
 interface ReconciledSummaryProps {
   commits: WeeklyCommit[];
 }
-
-const STATUS_META: Record<CompletionStatus, { label: string; color: string; bg: string }> = {
-  COMPLETED: { label: 'Completed', color: '#1b5e20', bg: '#e8f5e9' },
-  PARTIAL: { label: 'Partial', color: '#e65100', bg: '#fff3e0' },
-  NOT_STARTED: { label: 'Not Started', color: '#424242', bg: '#f5f5f5' },
-  BLOCKED: { label: 'Blocked', color: '#b71c1c', bg: '#ffebee' },
-};
-
-const CHESS_LABELS: Record<ChessCategory, string> = {
-  KING: 'King',
-  QUEEN: 'Queen',
-  ROOK: 'Rook',
-  KNIGHT: 'Knight',
-  PAWN: 'Pawn',
-};
 
 function completionStats(commits: WeeklyCommit[]) {
   const counts: Record<string, number> = {
@@ -35,6 +21,7 @@ function completionStats(commits: WeeklyCommit[]) {
 }
 
 export default function ReconciledSummary({ commits }: ReconciledSummaryProps) {
+  const { mode } = useTheme();
   const stats = completionStats(commits);
   const total = commits.length;
 
@@ -45,7 +32,7 @@ export default function ReconciledSummary({ commits }: ReconciledSummaryProps) {
       <div style={rsStyles.statsRow}>
         {([CS.COMPLETED, CS.PARTIAL, CS.NOT_STARTED, CS.BLOCKED] as CompletionStatus[]).map(
           (status) => {
-            const meta = STATUS_META[status];
+            const meta = completionTheme(status, mode);
             const count = stats[status];
             return (
               <div
@@ -67,7 +54,10 @@ export default function ReconciledSummary({ commits }: ReconciledSummaryProps) {
       <div style={rsStyles.list}>
         {commits.map((commit) => {
           const statusMeta = commit.completionStatus
-            ? STATUS_META[commit.completionStatus]
+            ? completionTheme(commit.completionStatus, mode)
+            : null;
+          const chessMeta = commit.chessCategory
+            ? chessTheme(commit.chessCategory, mode)
             : null;
 
           return (
@@ -76,9 +66,17 @@ export default function ReconciledSummary({ commits }: ReconciledSummaryProps) {
                 <div style={rsStyles.cardLeft}>
                   <h3 style={rsStyles.cardTitle}>{commit.title}</h3>
                   <div style={rsStyles.metaRow}>
-                    {commit.chessCategory && (
-                      <span style={rsStyles.chessBadge}>
-                        {CHESS_LABELS[commit.chessCategory]}
+                    {chessMeta && (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        color: chessMeta.color,
+                        backgroundColor: chessMeta.bg,
+                      }}>
+                        {chessMeta.label}
                       </span>
                     )}
                     {statusMeta && (
@@ -147,7 +145,7 @@ const rsStyles = {
     margin: 0,
     fontSize: '20px',
     fontWeight: 600 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
   },
   statsRow: {
     display: 'flex',
@@ -161,6 +159,7 @@ const rsStyles = {
     borderRadius: '8px',
     border: '1px solid',
     textAlign: 'center' as const,
+    transition: 'background-color 200ms ease, border-color 200ms ease',
   },
   statCount: {
     fontSize: '24px',
@@ -177,13 +176,15 @@ const rsStyles = {
     gap: '12px',
   },
   card: {
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
     padding: '16px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '12px',
+    boxShadow: 'var(--shadow)',
+    transition: 'background-color 200ms ease, border-color 200ms ease',
   },
   cardHeader: {
     display: 'flex',
@@ -198,22 +199,13 @@ const rsStyles = {
     margin: 0,
     fontSize: '15px',
     fontWeight: 600 as const,
-    color: '#1a1a1a',
+    color: 'var(--text)',
   },
   metaRow: {
     display: 'flex',
     gap: '6px',
     marginTop: '6px',
     flexWrap: 'wrap' as const,
-  },
-  chessBadge: {
-    display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: '12px',
-    fontSize: '11px',
-    fontWeight: 500 as const,
-    color: '#555',
-    backgroundColor: '#f0f0f0',
   },
   statusBadge: {
     display: 'inline-block',
@@ -228,8 +220,8 @@ const rsStyles = {
     borderRadius: '12px',
     fontSize: '11px',
     fontWeight: 500 as const,
-    color: '#1565c0',
-    backgroundColor: '#e3f2fd',
+    color: 'var(--primary)',
+    backgroundColor: 'var(--primary-bg)',
   },
   comparisonGrid: {
     display: 'grid',
@@ -244,40 +236,41 @@ const rsStyles = {
   comparisonLabel: {
     fontSize: '11px',
     fontWeight: 600 as const,
-    color: '#888',
+    color: 'var(--text-muted)',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5px',
   },
   comparisonText: {
     fontSize: '13px',
-    color: '#333',
+    color: 'var(--text-secondary)',
     lineHeight: 1.4,
   },
   blockerSection: {
-    backgroundColor: '#fff8e1',
-    borderRadius: '4px',
+    backgroundColor: 'var(--warning-bg)',
+    borderRadius: '6px',
     padding: '8px 12px',
+    transition: 'background-color 200ms ease',
   },
   blockerLabel: {
     fontSize: '11px',
     fontWeight: 600 as const,
-    color: '#f57f17',
+    color: 'var(--warning)',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5px',
     marginBottom: '2px',
   },
   blockerText: {
     fontSize: '13px',
-    color: '#333',
+    color: 'var(--text-secondary)',
     lineHeight: 1.4,
   },
   footer: {
     paddingTop: '8px',
-    borderTop: '1px solid #eee',
+    borderTop: '1px solid var(--border)',
   },
   footerText: {
     fontSize: '14px',
-    color: '#555',
+    color: 'var(--text-secondary)',
     fontWeight: 500 as const,
   },
 };
