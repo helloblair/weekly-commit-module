@@ -97,6 +97,14 @@ export interface CommitFormData {
   rcdoLinks: RCDOLink[]; // at least one required
 }
 
+export interface CommitUpdatePayload {
+  title?: string;
+  description?: string | null;
+  chessCategory?: ChessCategory | null;
+  priorityRank?: number | null;
+  rcdoLinks?: RCDOLink[];
+}
+
 export interface ReconciliationData {
   commitId: string;
   completionStatus: CompletionStatus;
@@ -114,4 +122,70 @@ export interface CommitSnapshot {
   chessCategory: ChessCategory | null;
   priorityRank: number | null;
   rcdoLinks: RCDOLink[];
+}
+
+// --- Manager dashboard types ---
+
+export interface TeamRollup {
+  weekOf: string;
+  teamMembers: TeamMemberSummary[];
+}
+
+export interface TeamMemberSummary {
+  userId: string;
+  name: string;
+  planStatus: PlanStatus;
+  commits: CommitSummary[];
+  stats: CompletionStats;
+}
+
+export interface CommitSummary {
+  id: string;
+  title: string;
+  chessCategory: ChessCategory | null;
+  completionStatus: CompletionStatus | null;
+  rcdoPath: string;
+}
+
+export interface CompletionStats {
+  total: number;
+  completed: number;
+  partial: number;
+  notStarted: number;
+  blocked: number;
+}
+
+export interface RCDOCoverage {
+  weekOf: string;
+  rallyCries: RallyCryCoverage[];
+}
+
+export interface RallyCryCoverage {
+  id: string;
+  title: string;
+  covered: boolean;
+  definingObjectives: DefiningObjectiveCoverage[];
+}
+
+export interface DefiningObjectiveCoverage {
+  id: string;
+  title: string;
+  covered: boolean;
+  outcomes: OutcomeCoverage[];
+}
+
+export interface OutcomeCoverage {
+  id: string;
+  title: string;
+  covered: boolean;
+  completionRate: number;
+  commits: CoverageCommitRef[];
+}
+
+export interface CoverageCommitRef {
+  commitId: string;
+  userId: string;
+  memberName: string;
+  commitTitle: string;
+  completionStatus: CompletionStatus | null;
 }

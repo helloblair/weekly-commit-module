@@ -4,16 +4,25 @@ import type {
   WeeklyPlan,
   WeeklyCommit,
   CommitFormData,
+  CommitUpdatePayload,
   ReconciliationData,
+  TeamRollup,
+  RCDOCoverage,
 } from '../types/domain';
 
-// Stub — will be replaced with real auth in Phase 6
+// Auth token provider — host app sets this via setAuthTokenProvider()
+let tokenProvider: () => string = () => '';
+
+export function setAuthTokenProvider(provider: () => string): void {
+  tokenProvider = provider;
+}
+
 function getAuthToken(): string {
-  return '';
+  return tokenProvider();
 }
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080',
+  baseURL: process.env.REACT_APP_API_BASE_URL || '',
 });
 
 api.interceptors.request.use((config) => {
@@ -55,8 +64,8 @@ export async function createCommit(planId: string, formData: CommitFormData): Pr
   return data;
 }
 
-export async function updateCommit(commitId: string, formData: Partial<CommitFormData>): Promise<WeeklyCommit> {
-  const { data } = await api.put<WeeklyCommit>(`/api/v1/commits/${commitId}`, formData);
+export async function updateCommit(commitId: string, payload: CommitUpdatePayload): Promise<WeeklyCommit> {
+  const { data } = await api.put<WeeklyCommit>(`/api/v1/commits/${commitId}`, payload);
   return data;
 }
 
@@ -66,5 +75,20 @@ export async function deleteCommit(commitId: string): Promise<void> {
 
 // --- Reconciliation ---
 export async function submitReconciliation(planId: string, submissions: ReconciliationData[]): Promise<void> {
-  await api.post(`/api/v1/plans/${planId}/complete-reconciliation`, submissions);
+  await api.post(`/api/v1/plans/${planId}/complete-reconciliation`, { commits: submissions });
+}
+
+// --- Manager ---
+export async function fetchTeamRollup(managerId: string, weekOf: string): Promise<TeamRollup> {
+  const { data } = await api.get<TeamRollup>(`/api/v1/manager/team-rollup`, {
+    params: { managerId, weekOf },
+  });
+  return data;
+}
+
+export async function fetchRcdoCoverage(managerId: string, orgId: string, weekOf: string): Promise<RCDOCoverage> {
+  const { data } = await api.get<RCDOCoverage>(`/api/v1/manager/rcdo-coverage`, {
+    params: { managerId, orgId, weekOf },
+  });
+  return data;
 }

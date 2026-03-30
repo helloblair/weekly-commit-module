@@ -40,6 +40,7 @@ const config: Configuration = {
       filename: "remoteEntry.js",
       exposes: {
         "./WeeklyCommitModule": "./src/bootstrap",
+        "./ManagerDashboard": "./src/pages/ManagerDashboard",
       },
       shared: {
         react: {
@@ -54,6 +55,11 @@ const config: Configuration = {
         },
       },
     }),
+    new webpack.DefinePlugin({
+      "process.env.REACT_APP_API_BASE_URL": JSON.stringify(
+        process.env.REACT_APP_API_BASE_URL || ""
+      ),
+    }),
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "public/index.html"),
     }),
@@ -64,6 +70,13 @@ const config: Configuration = {
     headers: {
       "Access-Control-Allow-Origin": "*",
     },
+    proxy: [
+      {
+        context: ["/api"],
+        target: "http://localhost:8081",
+        changeOrigin: true,
+      },
+    ],
   },
 };
 
