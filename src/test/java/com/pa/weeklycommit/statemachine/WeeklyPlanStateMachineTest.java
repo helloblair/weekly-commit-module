@@ -3,14 +3,18 @@ package com.pa.weeklycommit.statemachine;
 import com.pa.weeklycommit.entity.CommitRcdoLink;
 import com.pa.weeklycommit.entity.WeeklyCommit;
 import com.pa.weeklycommit.entity.WeeklyPlan;
+import com.pa.weeklycommit.exception.IllegalTransitionException;
 import com.pa.weeklycommit.model.ChessCategory;
 import com.pa.weeklycommit.model.CompletionStatus;
 import com.pa.weeklycommit.model.PlanStatus;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -199,6 +203,39 @@ class WeeklyPlanStateMachineTest {
                     .isInstanceOf(IllegalTransitionException.class)
                     .hasMessageContaining("DRAFT");
         }
+
+        @Test
+        @DisplayName("DRAFT → RECONCILED via COMPLETE_RECONCILIATION should throw IllegalTransitionException")
+        void draftToReconciled() {
+            assertThatThrownBy(() -> stateMachine.transition(
+                    planWithStatus(PlanStatus.DRAFT),
+                    StateTransition.COMPLETE_RECONCILIATION,
+                    List.of(validCommitForReconciliation("Won't happen"))))
+                    .isInstanceOf(IllegalTransitionException.class)
+                    .hasMessageContaining("DRAFT");
+        }
+
+        @Test
+        @DisplayName("LOCKED → LOCKED via LOCK should throw IllegalTransitionException")
+        void lockedToLocked() {
+            assertThatThrownBy(() -> stateMachine.transition(
+                    planWithStatus(PlanStatus.LOCKED),
+                    StateTransition.LOCK,
+                    List.of(validCommitForLock("Already locked"))))
+                    .isInstanceOf(IllegalTransitionException.class)
+                    .hasMessageContaining("LOCKED");
+        }
+
+        @Test
+        @DisplayName("RECONCILING → LOCKED via LOCK should throw IllegalTransitionException")
+        void reconcilingToLocked() {
+            assertThatThrownBy(() -> stateMachine.transition(
+                    planWithStatus(PlanStatus.RECONCILING),
+                    StateTransition.LOCK,
+                    List.of(validCommitForLock("Can't go back"))))
+                    .isInstanceOf(IllegalTransitionException.class)
+                    .hasMessageContaining("RECONCILING");
+        }
     }
 
     // ── edge cases ──────────────────────────────────────────────────────
@@ -213,6 +250,55 @@ class WeeklyPlanStateMachineTest {
 
             assertThat(result).isInstanceOf(TransitionResult.Failure.class);
             assertThat(((TransitionResult.Failure) result).reason()).contains("no commits");
+        }
+
+        @Test
+        @DisplayName("Single valid commit should lock successfully")
+        void singleValidCommitLocks() {
+            TransitionResult result = stateMachine.transition(
+                    planWithStatus(PlanStatus.DRAFT),
+                    StateTransition.LOCK,
+                    List.of(validCommitForLock("Solo commit")));
+
+            assertThat(result).isInstanceOf(TransitionResult.Success.class);
+            TransitionResult.Success success = (TransitionResult.Success) result;
+            assertThat(success.newStatus()).isEqualTo(PlanStatus.LOCKED);
+            assertThat(success.timestamp()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("100 valid commits should lock successfully")
+        void hundredValidCommitsLock() {
+            List<WeeklyCommit> commits = IntStream.rangeClosed(1, 100)
+                    .mapToObj(i -> validCommitForLock("Commit #" + i))
+                    .toList();
+
+            TransitionResult result = stateMachine.transition(
+                    planWithStatus(PlanStatus.DRAFT), StateTransition.LOCK, commits);
+
+            assertThat(result).isInstanceOf(TransitionResult.Success.class);
+            TransitionResult.Success success = (TransitionResult.Success) result;
+            assertThat(success.newStatus()).isEqualTo(PlanStatus.LOCKED);
+        }
+
+        @Test
+        @DisplayName("100 commits where exactly one is missing chess category should fail")
+        void hundredCommitsOneMissingChessCategory() {
+            List<WeeklyCommit> commits = new ArrayList<>(IntStream.rangeClosed(1, 99)
+                    .mapToObj(i -> validCommitForLock("Valid #" + i))
+                    .toList());
+
+            WeeklyCommit bad = new WeeklyCommit();
+            bad.setTitle("The bad one");
+            bad.setRcdoLinks(List.of(new CommitRcdoLink()));
+            // chessCategory intentionally null
+            commits.add(bad);
+
+            TransitionResult result = stateMachine.transition(
+                    planWithStatus(PlanStatus.DRAFT), StateTransition.LOCK, commits);
+
+            assertThat(result).isInstanceOf(TransitionResult.Failure.class);
+            assertThat(((TransitionResult.Failure) result).reason()).contains("chess category");
         }
     }
 }

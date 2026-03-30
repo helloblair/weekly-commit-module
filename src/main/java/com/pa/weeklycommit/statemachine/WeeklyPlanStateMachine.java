@@ -2,6 +2,7 @@ package com.pa.weeklycommit.statemachine;
 
 import com.pa.weeklycommit.entity.WeeklyCommit;
 import com.pa.weeklycommit.entity.WeeklyPlan;
+import com.pa.weeklycommit.exception.IllegalTransitionException;
 import com.pa.weeklycommit.model.PlanStatus;
 import org.springframework.stereotype.Component;
 
